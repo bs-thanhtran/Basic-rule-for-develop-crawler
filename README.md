@@ -160,7 +160,7 @@ Message của 実行ログ(log thực thi) thì được cấu trúc ở 2 cái 
 
 ### 準正常 (semi-normal)
 
-Trường hợo không phải là lỗi chẳng hạn như bị gián đoạn xử lý 1 thời gian thì xuất nội dung sau ra chi tiết
+Trường hợp không phải là lỗi chẳng hạn như bị gián đoạn xử lý 1 thời gian thì xuất nội dung sau ra chi tiết
 
 - アクセス過多 Too many access(429):  “単位時間のアクセス上限を超えました。%d分待ってアクセスします。”
 
