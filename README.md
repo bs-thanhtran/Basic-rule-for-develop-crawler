@@ -230,6 +230,7 @@ Bên dưới là các error message chung. Tuy nhiên、đối với các lỗi 
 
 - xuất ra ở info level
     - xuất để biết được tham số của API request
+    	- tuy nhiên credential chẳng hạn API Key thì không show ra. Xoá khỏi log OR thay thế = chuỗi ký tự đặc biệt như là xxxx 	
     - lọc ra các thông tin hữu ích rồi xuất ra khi phân tích lỗi
 - response khi phát sinh error/HTTP status khác 200 thì xuất ra ở error level
     - response API thì cứ để vậy mà xuất ra
