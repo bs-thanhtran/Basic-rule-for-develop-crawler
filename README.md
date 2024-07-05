@@ -209,6 +209,10 @@ Bên dưới là các error message chung. Tuy nhiên、đối với các lỗi 
     - Format error
         - 結果(kết quả)：指定した対象に問題があります
         - 詳細(chi tiết)：指定した対象（カラム名等）に問題があります。ご確認ください。
+- Lỗi giá trị input
+    - lỗi convert string encoding
+        - 結果(kết quả)：指定した対象に問題があります
+        - 詳細(chi tiết)：変換処理に失敗しました。データの文字コードをご確認ください。
 - Lỗi validation、lỗi format
     - lỗi format, tham số API không thể combined
         - 結果(kết quả)：ワークフロー設定に問題があります
