@@ -219,11 +219,15 @@ Bên dưới là các error message chung. Tuy nhiên、đối với các lỗi 
         - 詳細(chi tiết)：ワークフロー設定に問題があります。設定をご確認ください。
 - データ準備前のエラー lỗi trước khi chuẩn bị data
     - ở trường hợp như là giá trị thống kê、chưa tồn tại data sau khi thống kê
-        - 結果：ワークフロー設定に問題があります
-        - 詳細：指定した日にちのデータが存在しません。設定をご確認ください。
+        - 結果(kết quả)：ワークフロー設定に問題があります
+        - 詳細(chi tiết)：指定した日にちのデータが存在しません。設定をご確認ください。
+- BigQuery出力エラー lỗi output BQ
+    - chẳng hạn setting schema、tên cột partition、setting BQ table output không thích hợp
+        - 結果(kết quả)：ワークフロー設定に問題があります
+        - 詳細(chi tiết)：BigQueryへのデータ取り込みに失敗しました。スキーマ、パーティションなどの設定をご確認ください。          
 - lỗi abnormal phát sinh mà không thể phân loại vào trong bất cứ loại nào đã có
-    - 結果：予期せぬエラーが発生しました
-    - 詳細：（không có）
+    - 結果(kết quả)：予期せぬエラーが発生しました
+    - 詳細(chi tiết)：（không có）
 
 # システムログ system log
 
