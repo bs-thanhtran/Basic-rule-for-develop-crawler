@@ -202,6 +202,9 @@ Bên dưới là các error message chung. Tuy nhiên、đối với các lỗi 
     - dataset ,table, key đối tượng không tồn tại. Or không có quyền
         - 結果：指定した対象にアクセスできません
         - 詳細：指定した対象が存在しないか、アクセス権がありません。設定をご確認ください。
+    - kiểu của column chỉ định không chính xác
+        - 結果：指定した対象に問題があります
+        - 詳細：指定したカラムの型に誤りがあります。ご確認ください。 
 - Lỗi setting input ở chẳng hạn Google Sheets、Google Drive
     - File ở URL đối tượng không tồn tại、không thể ccess đến file ở URL đối tượng、có sai sót ở chỗ chỉ định range
         - 結果(kết quả)：指定した対象にアクセスできません
@@ -224,7 +227,7 @@ Bên dưới là các error message chung. Tuy nhiên、đối với các lỗi 
 - BigQuery出力エラー lỗi output BQ
     - chẳng hạn setting schema、tên cột partition、setting BQ table output không thích hợp
         - 結果(kết quả)：ワークフロー設定に問題があります
-        - 詳細(chi tiết)：BigQueryへのデータ取り込みに失敗しました。スキーマ、パーティションなどの設定をご確認ください。          
+        - 詳細(chi tiết)：BigQueryへのデータ取り込みに失敗しました。スキーマ、パーティションなどの設定をご確認ください。
 - lỗi abnormal phát sinh mà không thể phân loại vào trong bất cứ loại nào đã có
     - 結果(kết quả)：予期せぬエラーが発生しました
     - 詳細(chi tiết)：（không có）
