@@ -1,22 +1,22 @@
-# クローラー共通仕様
+# Crawler common spec
 
-各クローラーの共通仕様をまとめます。
+Tập hợp spec chung của mỗi crawler
 
-## ストレージサービス
+## ストレージサービス ( Storage service)
 
-### パーティション設定
+### パーティション設定 (Setting partition)
 
-仕様
+Spec
 
-- 取り込み時間: _PARTITIONTIME (UTCの擬似列) 。
-    - パーティション単位: DAY, MONTH
-- 時間単位の列: 既存テーブルのデータを全削除して取り込む。
-    - パーティション単位: DAY, MONTH
-    - DATE, TIMESTAMP, DATETIME のいずれかの型のカラムを設定する
-- テーブル Suffix: 日付でテーブルを分割する（指定したテーブル名に _yyyy-mm-dd がつく）
-- なし: パーティションなしで全データを取り込む。毎回、全データの洗い替えになる。
+- 取り込み時間( thời gian import) : _PARTITIONTIME (UTCの擬似列) 。
+    - パーティション単位 (đơn vị partition): DAY, MONTH
+- 時間単位の列( cột đơn vị thời gian) : xoá toàn bộ data của table tồn tại,rồi import。
+    - パーティション単位 (đơn vị partition): DAY, MONTH
+    - setting column có kiểu là 1 trong các kiểu DATE, TIMESTAMP, DATETIME
+- テーブル Suffix (table Suffix) : 日付でテーブルを分割する（指定したテーブル名に _yyyy-mm-dd がつく）
+- なし( không có): import all data mà không có partition。Thay thề toàn bộ data mỗi lần。
 
-- **ユースケースと想定しているパーティション設定**
+- ** Use cases và các setting partition tưởng định**
     1. [通常利用] 定期的にファイルを取り込み、追加する。
         - パーティション設定：「取り込み時間」「テーブル Suffix」
             - 日付入りファイル名 (file_2024-08-20.csv など) の日付を指定して取り込む。
@@ -41,45 +41,45 @@
             - 既存のテーブルに取り込む場合、データを全削除してから取り込む。
             - 「時間単位の列」のパーティションなしバージョン。
 
-### スキーマ自動設定（カラム名を指定）
+### スキーマ自動設定（カラム名を指定）Setting schema tự động ( chỉ định column name)
 
-以下の条件の時の動作を定義する。
+Định nghĩa hành vi theo các điều kiện sau
 
-- CSVファイル
-- スキップする行の数（ユースケースに合わせて適切に設定する）
-- スキーマ設定：自動検知
-    - カラム名を手動で設定: ON
+- CSVファイル File CSV
+- スキップする行の数（ユースケースに合わせて適切に設定する） Số dòng skip ( setting tương thích kết hợp với use case)
+- スキーマ設定：自動検知  Setting schema : detect tự động
+    - カラム名を手動で設定: ON   Setting column name : ON
 
-- 対象クローラー
+- Crawler đối tượng
     
     
     | 7010005 | Google Drive |
     | --- | --- |
     | 7010006 | Box |
     | 7010007 | Dropbox |
-- ユースケース
-    - ユースケース1: ヘッダ行のあるCSVファイルだが、BQのカラム名として使えないのでカラム名を変更して取り込みたい
-    - ユースケース2: ヘッダ行のないCSVファイルにヘッダを設定して取り込みたい
-    - ユースケース3: ExcelからエクスポートしたCSVファイルをそのまま取り込みたいので、数行スキップして取り込みたい
-    - ユースケース4: CSVファイルの途中から取り込みたい
+- Use case
+    - Use case1: CSV có dòng header、nhưng muốn thay đổi column name và import,do không thể sử dụng column name của BQ
+    - Use case2: Muốn setting header và import vào file CSV không có header
+    - Use case3: Trường hợp muốn import CSV file mà đã export từ Excel、thì muốn import mà skip 1 số dòng
+    - Use case4: Muốn import 1 số dòng bên trong CSV
 
-- 各ユースケースでの設定
+- Setting ở mỗi user case
     
-    以下の設定で取り込むことにより、指定したカラム名で、期待しているデータを全て取り込むことができる。
+    Bằng cách import theo các setting dưới đây thì ở tên column đã chỉ định 、có thể import toàn bộ data expected
     
-    サンプル：[https://drive.google.com/drive/folders/1LXQwrjsdwDgx_qLQMx8OjZoQTmXuDWP-?hl=ja](https://drive.google.com/drive/folders/1LXQwrjsdwDgx_qLQMx8OjZoQTmXuDWP-?hl=ja)
+    Sample：[https://drive.google.com/drive/folders/1LXQwrjsdwDgx_qLQMx8OjZoQTmXuDWP-?hl=ja](https://drive.google.com/drive/folders/1LXQwrjsdwDgx_qLQMx8OjZoQTmXuDWP-?hl=ja)
     
-    - ユースケース1: ヘッダ行のあるCSVファイル
-        - スキップする行の数: デフォルト（1）
-        - サンプルファイル：stock_2024-10-03_standard.csv
-    - ユースケース2: ヘッダ行のないCSVファイル
-        - スキップする行の数: 0
-        - サンプルファイル: stock_2024-10-03_no_headers.csv
-    - ユースケース3: ヘッダ行のあるCSVファイル（数行が空行）
-        - スキップする行の数: 空行の数+1
-            - e.g.) 空行: 3 の場合 → 4 を設定する
-        - サンプルファイル: stock_2024-10-03_with_empty_rows.csv （空行3, ヘッダカラム行1）
-    - ユースケース4:  CSVファイル（途中から取り込む）
-        - スキップする行の数: 取り込むデータの上の行までの数
-            - e.g.) 5行目から取り込みたい場合 → 4 を設定する
-        - サンプルファイル: stock_2024-10-03_with_dummys.csv （ヘッダカラム行1, ダミー行3）
+    - Use case1: CSV có header
+        - スキップする行の数(số dòng skip) : デフォルト Default（1）
+        - Sample file ：stock_2024-10-03_standard.csv
+    - Use case2: CSV không có dòng header
+        - スキップする行の数(số dòng skip): 0
+        - Sample file: stock_2024-10-03_no_headers.csv
+    - Use case3: CSV có header（1 vài dòng trống）
+        - スキップする行の数(số dòng skip): số dòng trống +1
+            - e.g.) trường hợp dòng trống: 3 → setting 4
+        - Sample file: stock_2024-10-03_with_empty_rows.csv （dòng trống 3, dòng column header 1）
+    - Use case4:  CSVファイル（import từ giữa chừng）
+        - スキップする行の数(số dòng skip): số cho đến trước dòng data muốn import
+            - e.g.) trường hợp muốn import từ dòng thứ 5 → setting 4
+        - Sample file: stock_2024-10-03_with_dummys.csv （header column dòng 1, dòng dummy 3）
