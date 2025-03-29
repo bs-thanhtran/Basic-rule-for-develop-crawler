@@ -1,0 +1,1501 @@
+# [g_ad_v17] システムテストv2
+
+PBI: Google 広告の API を v17 にバージョンアップしたい (https://www.notion.so/Google-API-v17-465b4a0ca9c34b13be9301fd95d9cb7a?pvs=21)
+Status: Done
+アサイン: Thanh Tran, Khiem Tran
+スプリント: https://www.notion.so/f8075182871c438785bb913b8fa40b0e
+
+# ゴール
+
+## タスクの内容
+
+- 開発者以外のメンバーによる動作確認が可能な品質になっていることを確認する
+
+## 検証方法
+
+- [x]  設計でのIN/OUT通りに動作すること
+    
+    ※ UIでの入力パターン網羅は「コーディング」や「結合テスト」で実施し、実際のUI入力でのテストは最小限にすることが望ましい。
+    
+- [x]  スキーマ、パーティション、クラスターの設定が仕様通りであること
+- [x]  実行ログの出力がルールに従っていること：[実行ログ](https://www.notion.so/f2c4e9fd8d4e4db7807d6cb729979343?pvs=21)
+- [x]  システムログの出力がルールに従っていること：[システムログ](https://www.notion.so/1421fdceed0c40838cf480b135088925?pvs=21)
+- [x]  API キーなどの Credentials がログに含まれていないこと
+- [x]  （更新の場合）前のバージョンで取得したデータと同じ条件で同じデータが取得できること
+    
+    ※ APIによっては同じにならないことがあるが、その場合はその値の妥当性を確認すること。
+    
+
+## エビデンス
+
+画面キャプチャまたはGoogle Sheetsでエビデンスを残すこと。
+
+取得したデータのワークフロー設定およびテーブル名を記録すること。
+
+**※参考）[[refactor-sma] 受入テスト/セルフチェック](https://www.notion.so/refactor-sma-3e81918d73044de78140667f3429e390?pvs=21)** 
+
+**外部プロジェクトからの入力 / 出力**
+
+- 格納先に外部プロジェクトを指定した場合、指定したプロジェクトに保存されること。
+- BQ入力で外部プロジェクトが指定できる場合、指定したプロジェクトからデータを取得すること。
+
+**データ**　
+
+- スキーマ（項目名、型、など）
+    
+    [クローラー仕様書-Google 広告_Ver.0.1.4](https://www.notion.so/Google-_Ver-0-1-4-6aa10ce41d3d4b129bf38d1525e6197e?pvs=21)
+    
+    [テーブル](https://console.cloud.google.com/bigquery?authuser=0&hl=en&orgonly=true&project=collectro-dummy-customer5-gcp&supportedpurview=organizationId&ws=!1m20!1m4!4m3!1scollectro-dummy-customer5-gcp!2sraw_ad_backup!3sYDN_media!1m4!4m3!1scollectro-dummy-customer5-gcp!2sraw_ad!3sYDN_media_info_P!1m4!4m3!1scollectro-dummy-customer5-gcp!2swork_bsv_gg_0620!3sbsv_gg_new_acc_0620_01!1m4!4m3!1scollectro-dummy-customer5-gcp!2swork_bsv!3sbsv_gg_acc_0701)
+    
+    ![Untitled](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Untitled.png)
+    
+- パーティション、クラスター（キャプチャ）
+
+![Screenshot 2024-07-01 at 11.30.16.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-01_at_11.30.16.png)
+
+- 更新前後のデータ比較
+    - 広告アカウントID,ログインカスタマーID : `8077723984`
+    - 取得期間（開始~終了）: 2024/02/02 ～ 2024/02/02
+    - 広告アカウント
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_acc_0620_01(4 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv.bsv_gg_acc_0701(4 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,    
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_acc_0701` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_acc_0620_01`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,    
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,    
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_acc_0701` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_acc_0620_01`)
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Untitled](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Untitled%201.png)
+            
+    - キャンペーン
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_cam_0620_01 (11 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv.bsv_gg_cam_0701 (11 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,    
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_cam_0701` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_cam_0620_01`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_cam_0701` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_cam_0620_01`)
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Untitled](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Untitled%202.png)
+            
+    - 広告グループ
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_adgroup_0620_01 (26 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_adgroup_0703_01 (26 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_adgroup_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_adgroup_0620_01`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_adgroup_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_adgroup_0620_01`)
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Untitled](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Untitled%203.png)
+            
+    - 広告
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_ad_0620_01(147 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_ad_0703_01 (147 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    array_length(creative_image_ad_image_url),
+                    array_length(creative_responsive_display_ad_logo_images_url),
+                    array_length(creative_responsive_display_ad_square_marketing_images_url),
+                    array_length(creative_app_ad_images_url),
+                    array_length(creative_app_engagement_ad_images_url),
+                    array_length(creative_responsive_display_ad_marketing_images_url),
+                    array_length(creative_responsive_display_ad_square_logo_images_url),
+                    array_length(creative_app_pre_registration_ad_images_url),
+                    array_length(creative_local_ad_logo_images_url),
+                    array_length(creative_local_ad_marketing_images_url),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_ad_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    array_length(creative_image_ad_image_url),
+                    array_length(creative_responsive_display_ad_logo_images_url),
+                    array_length(creative_responsive_display_ad_square_marketing_images_url),
+                    array_length(creative_app_ad_images_url),
+                    array_length(creative_app_engagement_ad_images_url),
+                    array_length(creative_responsive_display_ad_marketing_images_url),
+                    array_length(creative_responsive_display_ad_square_logo_images_url),
+                    array_length(creative_app_pre_registration_ad_images_url),
+                    array_length(creative_local_ad_logo_images_url),
+                    array_length(creative_local_ad_marketing_images_url),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_ad_0620_01`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    array_length(creative_image_ad_image_url),
+                    array_length(creative_responsive_display_ad_logo_images_url),
+                    array_length(creative_responsive_display_ad_square_marketing_images_url),
+                    array_length(creative_app_ad_images_url),
+                    array_length(creative_app_engagement_ad_images_url),
+                    array_length(creative_responsive_display_ad_marketing_images_url),
+                    array_length(creative_responsive_display_ad_square_logo_images_url),
+                    array_length(creative_app_pre_registration_ad_images_url),
+                    array_length(creative_local_ad_logo_images_url),
+                    array_length(creative_local_ad_marketing_images_url),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_ad_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    array_length(creative_image_ad_image_url),
+                    array_length(creative_responsive_display_ad_logo_images_url),
+                    array_length(creative_responsive_display_ad_square_marketing_images_url),
+                    array_length(creative_app_ad_images_url),
+                    array_length(creative_app_engagement_ad_images_url),
+                    array_length(creative_responsive_display_ad_marketing_images_url),
+                    array_length(creative_responsive_display_ad_square_logo_images_url),
+                    array_length(creative_app_pre_registration_ad_images_url),
+                    array_length(creative_local_ad_logo_images_url),
+                    array_length(creative_local_ad_marketing_images_url),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_ad_0620_01`)
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Untitled](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Untitled%204.png)
+            
+    - 検索クエリ
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_sq_0620_01 (302 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_sq_0703_01 (302 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_sq_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_sq_0620_01`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_sq_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_sq_0620_01`)
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Untitled](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Untitled%205.png)
+            
+    - 地域別
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_geo_0620_01 (302 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_geo_0703_01 (302 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_geo_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_geo_0620_01`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_geo_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_geo_0620_01`)
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Untitled](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Untitled%206.png)
+            
+    - 性別
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_gen_0620_01 (56 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_gen_0703_01
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_gen_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_gen_0620_01`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_gen_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_gen_0620_01`)
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Untitled](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Untitled%207.png)
+            
+    - 年齢
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_age_0620_01 (148 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_age_0703_01 (148 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_age_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_age_0620_01`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_age_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_age_0620_01`)
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Untitled](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Untitled%208.png)
+            
+    - 検索キーワード
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_keyword_0620_01 (48 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_keyword_0703_01 (48 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_keyword_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_keyword_0620_01`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_keyword_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_new_keyword_0620_01`)
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Untitled](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Untitled%209.png)
+            
+    - 広告(CV)
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_adcv_v013 (63 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_ad_cv_0703_01 (63 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_ad_cv_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_adcv_v013`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_ad_cv_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_adcv_v013`)
+                
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Screenshot 2024-07-05 at 10.35.13.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-05_at_10.35.13.png)
+            
+    - 検索クエリ(CV)
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_sq_cv_v013 (56 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_sq_cv_0703_01 (56 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_sq_cv_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_sq_cv_v013`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv_gg_0620.bsv_gg_sq_cv_0703_01` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_sq_cv_v013`)
+                
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Screenshot 2024-07-05 at 10.44.15.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-05_at_10.44.15.png)
+            
+    - 検索キーワード(CV)
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_kwcv_v013 (46 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0705_kwcv_v014 (46 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0705_kwcv_v014` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_kwcv_v013`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0705_kwcv_v014` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_kwcv_v013`)
+                
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Screenshot 2024-07-05 at 10.54.45.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-05_at_10.54.45.png)
+            
+    - 地域別(CV)
+        - ２つのテーブルのデータの中身を含めて一致していることを確認(1日の場合)
+            - 変更前のテーブル：collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_geocv_v013(166 レコード)
+            - 変更後のテーブル：collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_geocv_v014 (166 レコード)
+            - query
+                
+                ```sql
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_geocv_v014` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_geocv_v013`) 
+                union all
+                select * from (
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action  from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_geocv_v014` 
+                  except distinct 
+                  select * except(
+                    created_at,
+                    creative_image_ad_image_url,
+                    creative_responsive_display_ad_logo_images_url,
+                    creative_responsive_display_ad_square_marketing_images_url,
+                    creative_app_ad_images_url,
+                    creative_app_engagement_ad_images_url,
+                    creative_responsive_display_ad_marketing_images_url,
+                    creative_responsive_display_ad_square_logo_images_url,
+                    creative_app_pre_registration_ad_images_url,
+                    creative_discovery_carousel_ad_logo_image_url,
+                    creative_discovery_multi_asset_ad_logo_images_url,
+                    creative_discovery_multi_asset_ad_marketing_images_url,
+                    creative_discovery_multi_asset_ad_portrait_marketing_images_url,
+                    creative_discovery_multi_asset_ad_square_marketing_images_url,
+                    creative_discovery_video_responsive_ad_logo_images_url,
+                    creative_local_ad_logo_images_url,
+                    creative_local_ad_marketing_images_url,
+                    creative_legacy_responsive_display_ad_logo_image_url,
+                    creative_legacy_responsive_display_ad_marketing_image_url,
+                    creative_legacy_responsive_display_ad_square_logo_image_url,
+                    creative_legacy_responsive_display_ad_square_marketing_image_url,
+                    content_report, content_creative, content_conversion_action),
+                    to_json_string(content_report) AS content_report,
+                    to_json_string(content_creative) AS content_creative,
+                    to_json_string(content_conversion_action) AS content_conversion_action from `collectro-dummy-customer5-gcp.work_bsv.bsv_gg_0704_geocv_v013`)
+                
+                ```
+                
+            
+            このクエリの結果が0行ですので、2つのテーブルはすべての行が一致しています。
+            
+            ![Screenshot 2024-07-05 at 11.00.24.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-05_at_11.00.24.png)
+            
+
+**実行ログ（キャプチャ）**
+
+- 正常系
+
+![Screenshot 2024-07-01 at 11.57.40.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-01_at_11.57.40.png)
+
+- 異常系
+    - 利用できない外部連携情報
+    
+    ![Screenshot 2024-07-05 at 11.07.24.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-05_at_11.07.24.png)
+    
+    - `広告アカウントIDまたは ログインカスタマーID`が無効
+    
+    ![Screenshot 2024-07-05 at 11.55.41.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-05_at_11.55.41.png)
+    
+
+**システムログ（キャプチャ）**
+
+- 正常系
+
+![Screenshot 2024-07-01 at 11.58.40.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-01_at_11.58.40.png)
+
+- 異常系
+    - 利用できない外部連携情報
+    
+    ![Screenshot 2024-07-05 at 11.30.27.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-05_at_11.30.27.png)
+    
+    - `広告アカウントIDまたは ログインカスタマーID`が無効
+    
+    ![Screenshot 2024-07-05 at 11.55.13.png](%5Bg_ad_v17%5D%20%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E3%83%86%E3%82%B9%E3%83%88v2%20b74d09fbbb9d4157b6afbb8e45be2b72/Screenshot_2024-07-05_at_11.55.13.png)
+    
+
+**外部プロジェクト出力**
+
+- [x]  格納先に外部プロジェクトを指定した場合、指定したプロジェクトに保存されること。
+
+# 関連情報
+
+‣
